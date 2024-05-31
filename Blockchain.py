@@ -10,8 +10,8 @@ from flask import Flask, jsonify, request
 
 class Blockchain(object):
     def __init__(self):
-        self.current_transactions = []
-        self.chain = []
+        self.current_transactions = [] #all the transactions for the current block
+        self.chain = [] #where all blocks are stored
 
         # Create the genesis block
         self.new_block(previous_hash=1, proof=100)
@@ -31,12 +31,13 @@ class Blockchain(object):
             'proof': proof,
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
-
+        """every block must always point to its previous block's hash 
+        (except genesis block)"""
         # Reset the current list of transactions
         self.current_transactions = []
 
-        self.chain.append(block)
-        return block
+        self.chain.append(block) #adds newly created block to the chain
+        return block #returns newly created block
 
     def new_transaction(self, sender, recipient, amount):
         """
@@ -52,13 +53,16 @@ class Blockchain(object):
             'amount': amount,
         })
 
-        return self.last_block['index'] + 1
+        return self.last_block['index'] + 1 #index of block to hold transaction
 
     @property
     def last_block(self):
         return self.chain[-1]
 
     def proof_of_work(self, last_proof):
+        """proof of work presents a computational challenge to solve before any new
+        block is added. This helps to ensure that malicious actors cannot easily modify the blockchain"""
+
         """
         Simple Proof of Work Algorithm:
          - Find a number p' such that hash(pp') contains leading 4 zeroes, where p is the previous p'
@@ -69,7 +73,7 @@ class Blockchain(object):
 
         proof = 0
         while self.valid_proof(last_proof, proof) is False:
-            proof += 1
+            proof += 1 #keeps incrementing proof by 1 until valid proof is found
 
         return proof
 
@@ -82,12 +86,17 @@ class Blockchain(object):
         :return: <bool> True if correct, False if not.
         """
 
-        guess = f'{last_proof}{proof}'.encode()
-        guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:4] == "0000"
+        guess = f'{last_proof}{proof}'.encode() #concatenates last proof and current proof, encodes it into bytes
+        guess_hash = hashlib.sha256(guess).hexdigest() #calculates hash of the guess and converts into a hexadecimal string
+        return guess_hash[:4] == "0000" #checks if the first four characters are zero, if so proof is a valid proof
 
     @staticmethod
     def hash(block):
+        """
+        this method is useful to detect any modifications or tampering to blocks since even a slight
+        change to one of the properties changes the hash. Hashes are also different to identify different blocks
+        and point to previous blocks"""
+
         """
         Creates a SHA-256 hash of a Block
         :param block: <dict> Block
@@ -95,8 +104,73 @@ class Blockchain(object):
         """
 
         # We must make sure that the Dictionary is Ordered, or we'll have inconsistent hashes
-        block_string = json.dumps(block, sort_keys=True).encode()
-        return hashlib.sha256(block_string).hexdigest()
+        block_string = json.dumps(block, sort_keys=True).encode() #converts block into a json string
+        #using dumps method, ensures dictionary is sorted and encodes it into bytes
+        return hashlib.sha256(block_string).hexdigest() #calculates hash of block_string and converts to hexadecimal
+
+    def valid_chain(self, chain):
+        """
+        Determine if a given blockchain is valid
+        :param chain: <list> A blockchain
+        :return: <bool> True if valid, False if not
+        """
+
+        last_block = chain[0]
+        current_index = 1
+
+        while current_index < len(chain):
+            block = chain[current_index]
+            print(f'{last_block}')
+            print(f'{block}')
+            print("\n-----------\n")
+            # Check that the hash of the block is correct
+            if block['previous_hash'] != self.hash(last_block):
+                return False
+
+            # Check that the Proof of Work is correct
+            if not self.valid_proof(last_block['proof'], block['proof']):
+                return False
+
+            last_block = block
+            current_index += 1
+
+        return True
+
+    def resolve_conflicts(self):
+        """
+        This is our Consensus Algorithm, it resolves conflicts
+        by replacing our chain with the longest one in the network.
+        :return: <bool> True if our chain was replaced, False if not. It does this by looping through each chain
+        that a node stores. If a neighbor has a valid chain that is greater than the node's chain, it replaces the
+        node's chain
+        """
+
+        neighbours = self.nodes
+        new_chain = None
+
+        # We're only looking for chains longer than ours
+        max_length = len(self.chain)
+
+        # Grab and verify the chains from all the nodes in our network
+        for node in neighbours:
+            response = request.get(f'http://{node}/chain')
+
+            if response.status_code == 200:
+                length = response.json()['length']
+                chain = response.json()['chain']
+
+                # Check if the length is longer and the chain is valid
+                if length > max_length and self.valid_chain(chain):
+                    max_length = length
+                    new_chain = chain
+
+        # Replace our chain if we discovered a new, valid chain longer than ours
+        if new_chain:
+            self.chain = new_chain
+            return True
+
+        return False
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -160,6 +234,43 @@ def full_chain():
         'chain': blockchain.chain,
         'length': len(blockchain.chain),
     }
+    return jsonify(response), 200
+
+#registers new nodes with POST method
+@app.route('/nodes/register', methods=['POST'])
+def register_nodes():
+    values = request.get_json()
+
+    nodes = values.get('nodes')
+    if nodes is None:
+        return "Error: Please supply a valid list of nodes", 400
+
+    for node in nodes:
+        blockchain.register_node(node)
+
+    response = {
+        'message': 'New nodes have been added',
+        'total_nodes': list(blockchain.nodes),
+    }
+    return jsonify(response), 201
+
+
+#resolves conflicts and updates valid and longest chain to all nodes
+@app.route('/nodes/resolve', methods=['GET'])
+def consensus():
+    replaced = blockchain.resolve_conflicts()
+
+    if replaced:
+        response = {
+            'message': 'Our chain was replaced',
+            'new_chain': blockchain.chain
+        }
+    else:
+        response = {
+            'message': 'Our chain is authoritative',
+            'chain': blockchain.chain
+        }
+
     return jsonify(response), 200
 
 if __name__ == '__main__':

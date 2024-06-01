@@ -126,11 +126,11 @@ class Blockchain(object):
             print(f'{block}')
             print("\n-----------\n")
             # Check that the hash of the block is correct
-            if block['previous_hash'] != self.hash(last_block):
+            if block['previous_hash'] != self.hash(last_block): #checks if the current block points to previous block hash
                 return False
 
             # Check that the Proof of Work is correct
-            if not self.valid_proof(last_block['proof'], block['proof']):
+            if not self.valid_proof(last_block['proof'], block['proof']): #checks that the proofs are valid
                 return False
 
             last_block = block
@@ -144,8 +144,8 @@ class Blockchain(object):
         :return: None
         """
 
-        parsed_url = urlparse(address)
-        self.nodes.add(parsed_url.netloc)
+        parsed_url = urlparse(address) #converts address to url object to allow access to different url components
+        self.nodes.add(parsed_url.netloc) #hostname and port number are included in netloc to give location
 
     def resolve_conflicts(self):
         """
@@ -163,8 +163,8 @@ class Blockchain(object):
         max_length = len(self.chain)
 
         # Grab and verify the chains from all the nodes in our network
-        for node in neighbours:
-            response = request.get(f'http://{node}/chain')
+        for node in neighbours: #traverse through each node in neighbors
+            response = request.get(f'http://{node}/chain') #get request to execute the full_chain method
 
             if response.status_code == 200:
                 length = response.json()['length']
@@ -247,16 +247,15 @@ def full_chain():
     }
     return jsonify(response), 200
 
-#registers new nodes with POST method
 @app.route('/nodes/register', methods=['POST'])
-def register_nodes():
-    values = request.get_json()
+def register_nodes(): #request body has JSON data through sending POST request
+    values = request.get_json() #retrieve data sent through request, converts json body into python dictionary
 
-    nodes = values.get('nodes')
+    nodes = values.get('nodes') #gets all nodes in values
     if nodes is None:
         return "Error: Please supply a valid list of nodes", 400
 
-    for node in nodes:
+    for node in nodes: #registers each node to blockchain instance
         blockchain.register_node(node)
 
     response = {
@@ -287,5 +286,5 @@ def consensus():
 if __name__ == '__main__':
     #host 0.0.0.0 ensures flask server listens to all available network interfaces, using 127.0.0.1 will only allow
     #my machine to access app
-    serve(app, host="127.0.0.1", port=5000)
-    # app.run(host='0.0.0.0', port=5000)
+    serve(app, host="127.0.0.1", port=5000) #127.0.0.1 allows deployed server to only be accessed from local server
+    # app.run(host='0.0.0.0', port=5000) #0.0.0.0 allows any machine to access server and send requests

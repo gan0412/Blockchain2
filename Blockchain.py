@@ -8,7 +8,7 @@ from waitress import serve
 from flask import Flask, jsonify, request
 from urllib.parse import urlparse
 
-
+#my entire program is an API as it interacts with the server deployed through HTTP requests
 class Blockchain(object):
     def __init__(self):
         self.current_transactions = [] #all the transactions for the current block

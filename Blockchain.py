@@ -5,7 +5,7 @@ import logging
 from time import time
 from uuid import uuid4
 from waitress import serve
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from urllib.parse import urlparse
 
 #program simulates a basic blockchain that can recieve transactions and perform proof of work
@@ -13,7 +13,7 @@ class Blockchain(object):
     def __init__(self):
         self.current_transactions = [] #all the transactions for the current block
         self.chain = [] #where all blocks are stored
-        self.nodes = set()
+        self.nodes = set() #where the nodes or users are stored
 
         # Create the genesis block
         self.new_block(previous_hash=1, proof=100)
@@ -194,6 +194,28 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
+@app.route('/', methods=['GET'])
+def index():
+    """Homepage: Display the blockchain and allow transactions."""
+    return render_template('index.html', chain=blockchain.chain)
+
+@app.route('/transactions/new', methods=['GET', 'POST'])
+def new_transaction():
+    """Handle transaction form submission and display."""
+    if request.method == 'POST':
+        values = request.form  # Get data from the form
+
+        # Check that the required fields are in the POST'ed data
+        required = ['sender', 'recipient', 'amount']
+        if not values or not all(k in values for k in required):
+            return 'Missing values', 400
+
+        # Create a new Transaction
+        index = blockchain.new_transaction(values['sender'], values['recipient'], int(values['amount']))
+        message = f'Transaction will be added to Block {index}'
+        return render_template('index.html', chain=blockchain.chain, message=message)
+
+    return render_template('new_transaction.html')
 
 @app.route('/mine', methods=['GET'])
 def mine():
@@ -224,19 +246,7 @@ def mine():
     return jsonify(response), 200
 
 
-@app.route('/transactions/new', methods=['POST'])
-def new_transaction():
-    values = request.get_json()
 
-    # Check that the required fields are in the POST'ed data
-    required = ['sender', 'recipient', 'amount']
-    if not values or not all(k in values for k in required):
-        return 'Missing values', 400
-
-    # Create a new Transaction
-    index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
-    response = {'message': f'Transaction will be added to Block {index}'}
-    return jsonify(response), 201
 
 
 @app.route('/chain', methods=['GET'])
@@ -247,22 +257,25 @@ def full_chain():
     }
     return jsonify(response), 200
 
-@app.route('/nodes/register', methods=['POST'])
-def register_nodes(): #request body has JSON data through sending POST request
-    values = request.get_json() #retrieve data sent through request, converts json body into python dictionary
+@app.route('/nodes/register', methods=['GET', 'POST'])
+def register_nodes():
+    if request.method == 'POST':
+        nodes = request.form.get('nodes')
+        if nodes is None:
+            return "Error: Please supply a valid list of nodes", 400
 
-    nodes = values.get('nodes') #gets all nodes in values
-    if nodes is None:
-        return "Error: Please supply a valid list of nodes", 400
+        nodes = nodes.split(',')  # Assuming nodes are comma-separated in the form
+        for node in nodes:
+            node = node.strip() # Remove leading/trailing whitespace
+            blockchain.register_node(node)
 
-    for node in nodes: #registers each node to blockchain instance
-        blockchain.register_node(node)
+        response = {
+            'message': 'New nodes have been added',
+            'total_nodes': list(blockchain.nodes),
+        }
+        return render_template('register_node.html', message=response['message'])
 
-    response = {
-        'message': 'New nodes have been added',
-        'total_nodes': list(blockchain.nodes),
-    }
-    return jsonify(response), 201
+    return render_template('register_node.html')
 
 
 #resolves conflicts and updates valid and longest chain to all nodes

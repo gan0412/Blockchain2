@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blockchain Node</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Blockchain Node</h1>
+
+    <h2>Register a New Node</h2>
+    <form id="registrationForm" method="POST">
+        <label for="nodeAddress">Node Address:</label>
+        <input type="text" id="nodeAddress" name="nodes" required>
+        <button type="submit">Register Node</button>
+    </form>
+
+    <div id="registrationResult"></div>
+
+</body>
+</html>

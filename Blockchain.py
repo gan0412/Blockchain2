@@ -196,7 +196,7 @@ blockchain = Blockchain()
 
 @app.route('/', methods=['GET'])
 def index():
-    """Homepage: Display the blockchain and allow transactions."""
+    """Homepage: all buttons are viewable and clickable"""
     return render_template('index.html', chain=blockchain.chain)
 
 @app.route('/transactions/new', methods=['GET', 'POST'])
@@ -246,9 +246,6 @@ def mine():
     return render_template('mine.html', block=block)
 
     #return jsonify(response), 200
-
-
-
 
 
 @app.route('/chain', methods=['GET'])

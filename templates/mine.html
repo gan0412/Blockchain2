@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mining Results</title>
+</head>
+<body>
+    <h1>Mining Results</h1>
+    {% if block %}
+        <h2>New Block Forged</h2>
+        <p>Index: {{ block.index }}</p>
+        <p>Transactions: </p>
+        <ul>
+            {% for transaction in block.transactions %}
+                <li>
+                    Sender: {{ transaction.sender }}<br>
+                    Recipient: {{ transaction.recipient }}<br>
+                    Amount: {{ transaction.amount }}
+                </li>
+            {% endfor %}
+        </ul>
+        <p>Proof: {{ block.proof }}</p>
+        <p>Previous Hash: {{ block.previous_hash }}</p>
+    {% else %}
+        <p>No block mined yet.</p>
+    {% endif %}
+    <button onclick="window.location.href='/'">Back to Blockchain</button>
+</body>
+</html>

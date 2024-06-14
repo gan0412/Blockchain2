@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blockchain</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+        .block {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .block-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Blockchain</h1>
+    <div>
+        {% for block in chain %}
+            <div class="block">
+                <div class="block-header">Block {{ block.index }}</div>
+                <p>Timestamp: {{ block.timestamp }}</p>
+                <p>Proof: {{ block.proof }}</p>
+                <p>Previous Hash: {{ block.previous_hash }}</p>
+                <h3>Transactions:</h3>
+                <ul>
+                {% for transaction in block.transactions %}
+                    <li>
+                        Sender: {{ transaction.sender }}<br>
+                        Recipient: {{ transaction.recipient }}<br>
+                        Amount: {{ transaction.amount }}
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+    <button onclick="window.location.href='/'">Back to Blockchain</button>
+</body>
+</html>

@@ -243,7 +243,9 @@ def mine():
         'proof': block['proof'],
         'previous_hash': block['previous_hash'],
     }
-    return jsonify(response), 200
+    return render_template('mine.html', block=block)
+
+    #return jsonify(response), 200
 
 
 
@@ -255,7 +257,7 @@ def full_chain():
         'chain': blockchain.chain,
         'length': len(blockchain.chain),
     }
-    return jsonify(response), 200
+    return render_template('chain.html', chain=response['chain'])
 
 @app.route('/nodes/register', methods=['GET', 'POST'])
 def register_nodes():
@@ -294,7 +296,7 @@ def consensus():
             'chain': blockchain.chain
         }
 
-    return jsonify(response), 200
+    return render_template('resolve_conflicts.html', message=response['message'])
 
 if __name__ == '__main__':
     #host 0.0.0.0 ensures flask server listens to all available network interfaces, using 127.0.0.1 will only allow

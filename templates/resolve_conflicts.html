@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resolve Conflicts</title>
+</head>
+<body>
+    <h1>Resolve Conflicts</h1>
+    <p>Click the button below to resolve any conflicts and ensure you have the longest valid blockchain.</p>
+    <form method="GET" action="/nodes/resolve">
+        <button type="submit">Resolve Conflicts</button>
+    </form>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    <button onclick="window.location.href='/'">Back to Blockchain</button>
+
+</body>
+</html>

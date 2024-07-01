@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request, render_template
 from uuid import uuid4
 import Blockchain
+import logging
+
 
 
 logging.basicConfig(level=logging.INFO)
@@ -115,8 +117,3 @@ def consensus():
 
     return render_template('resolve_conflicts.html', message=response['message'])
 
-if __name__ == '__main__':
-    #host 0.0.0.0 ensures flask server listens to all available network interfaces, using 127.0.0.1 will only allow
-    #my machine to access app
-    serve(app, host="127.0.0.1", port=5000) #127.0.0.1 allows deployed server to only be accessed from local server
-    # app.run(host='0.0.0.0', port=5000) #0.0.0.0 allows any machine to access server and send requests
